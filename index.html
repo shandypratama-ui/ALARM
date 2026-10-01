@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1630">
+<title>Alarm Bangun Tidur</title>
+<style>
+:root{
+  --bg:#0f1630; --bg2:#172043; --card:#1c2650; --line:#2b376c;
+  --text:#f3efe6; --mute:#9aa4cf; --sun:#f6b94a; --sun2:#ff8f5a; --ok:#66d19e; --bad:#ff6b6b;
+  --r:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:linear-gradient(180deg,var(--bg) 0%,#0a1024 100%) fixed;
+  color:var(--text);
+  padding-top:env(safe-area-inset-top,0px);
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.tnum{font-variant-numeric:tabular-nums}
+#app{max-width:560px;margin:0 auto;min-height:100%;padding:0 16px 120px}
+#banner .warn{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#3a2a1a;border:1px solid #6b4a1f;color:#ffd596;font-size:13px;line-height:1.45}
+.tab{display:none}.tab.active{display:block}
+
+/* Jam besar */
+.hero{padding:34px 0 18px;text-align:center}
+.bigclock{font-size:clamp(56px,17vw,92px);font-weight:300;letter-spacing:-2px;line-height:1}
+.bigclock small{font-size:.33em;color:var(--sun);margin-left:6px;letter-spacing:0}
+.date{margin-top:8px;color:var(--mute);font-size:15px}
+.next{margin-top:14px;display:inline-block;padding:7px 14px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);font-size:13px;color:var(--sun)}
+
+/* Daftar alarm */
+.acard{background:var(--card);border-radius:var(--r);padding:16px 18px;margin:12px 0;display:flex;align-items:center;gap:14px;border:1px solid transparent}
+.acard.off{opacity:.55}
+.acard .main{flex:1;min-width:0;text-align:left}
+.acard .t{font-size:38px;font-weight:300;letter-spacing:-1px}
+.acard .t small{font-size:14px;color:var(--mute);margin-left:4px}
+.acard .l{font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acard .d{font-size:12px;color:var(--mute);margin-top:3px}
+.acard .snd{font-size:12px;color:var(--sun);margin-top:3px}
+.switch{position:relative;width:52px;height:30px;flex:none}
+.switch input{opacity:0;position:absolute;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.switch i{position:absolute;inset:0;border-radius:99px;background:#39457a;transition:.2s}
+.switch i:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+i{background:var(--sun)}
+.switch input:checked+i:after{transform:translateX(22px);background:#3a2a05}
+.empty{margin:40px 0;text-align:center;color:var(--mute);line-height:1.6}
+
+/* Tombol */
+.fab{position:fixed;right:max(18px,calc(50% - 262px));bottom:calc(86px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:50%;
+  background:linear-gradient(135deg,var(--sun),var(--sun2));color:#2b1900;font-size:34px;line-height:1;box-shadow:0 8px 24px rgba(246,185,74,.35);z-index:20}
+.btn{padding:12px 18px;border-radius:14px;background:var(--bg2);border:1px solid var(--line);font-weight:600}
+.btn.primary{background:linear-gradient(135deg,var(--sun),var(--sun2));color:#2b1900;border:0}
+.btn.danger{color:var(--bad)}
+.btn.block{display:block;width:100%}
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(10,16,36,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:19}
+nav .in{display:flex;width:100%;max-width:560px}
+nav button{flex:1;padding:12px 4px 10px;color:var(--mute);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button b{font-size:20px;font-weight:400}
+nav button.active{color:var(--sun)}
+.topbar{display:flex;justify-content:flex-end;padding-top:10px}
+.iconbtn{width:42px;height:42px;border-radius:50%;background:var(--bg2);border:1px solid var(--line);font-size:19px}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(3,6,18,.7);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--bg2);border-radius:26px 26px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom,0px));border:1px solid var(--line)}
+.sheet h2{margin:0 0 14px;font-size:20px;font-weight:600}
+.timeinput{width:100%;font-size:54px;font-weight:300;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px;color:var(--text);color-scheme:dark}
+.field{margin-top:16px}
+.field>label,.lab{display:block;font-size:13px;color:var(--mute);margin-bottom:7px}
+.inp{width:100%;padding:12px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--text);color-scheme:dark}
+.days{display:flex;gap:6px;justify-content:space-between}
+.days button{flex:1;aspect-ratio:1;max-width:48px;border-radius:50%;background:var(--card);border:1px solid var(--line);font-size:12px;color:var(--mute)}
+.days button.on{background:var(--sun);color:#2b1900;border-color:var(--sun);font-weight:700}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .tx{font-size:15px}.row .sub{font-size:12px;color:var(--mute);margin-top:2px}
+.btnrow{display:flex;gap:10px;margin-top:20px}.btnrow .btn{flex:1}
+.hint{font-size:12px;color:var(--mute);margin-top:6px;line-height:1.5}
+.seg{display:flex;background:var(--card);border-radius:12px;border:1px solid var(--line);padding:3px}
+.seg button{flex:1;padding:9px;border-radius:9px;font-size:14px;color:var(--mute)}
+.seg button.on{background:var(--sun);color:#2b1900;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--sun)}
+
+/* Timer & stopwatch */
+.big{font-size:clamp(54px,16vw,84px);font-weight:300;text-align:center;margin:40px 0 24px;letter-spacing:-1px}
+.tset{display:flex;gap:10px;justify-content:center;margin:34px 0 8px}
+.tset div{text-align:center}
+.tset input{width:86px;font-size:38px;text-align:center;padding:10px 0;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--text)}
+.tset span{display:block;font-size:12px;color:var(--mute);margin-top:5px}
+.ctrls{display:flex;gap:12px;justify-content:center;margin-top:10px}
+.ctrls .btn{min-width:110px}
+.presets{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.presets button{padding:8px 14px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);font-size:13px;color:var(--mute)}
+.laps{margin-top:22px}
+.lap{display:flex;justify-content:space-between;padding:10px 4px;border-bottom:1px solid var(--line);color:var(--mute)}
+
+/* Layar alarm berbunyi */
+#ring{position:fixed;inset:0;z-index:100;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;
+  background:radial-gradient(circle at 50% 18%,#ffb457 0%,#e8755a 28%,#3a2b6e 62%,#0f1630 100%)}
+#ring.show{display:flex}
+#ring .rt{font-size:clamp(64px,20vw,110px);font-weight:300;letter-spacing:-3px;line-height:1;color:#fff;text-shadow:0 2px 20px rgba(0,0,0,.25)}
+#ring .rl{font-size:22px;color:#fff;font-weight:600}
+#ring .rs{font-size:14px;color:#ffe9cf;min-height:20px}
+#ytwrap{width:min(100%,380px);aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#000;display:none;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#ytwrap.show{display:block}
+#ytwrap iframe,#ytbox{width:100%;height:100%;border:0}
+.ringbtns{display:flex;gap:14px;margin-top:14px;width:min(100%,380px)}
+.ringbtns button{flex:1;padding:18px 10px;border-radius:18px;font-size:18px;font-weight:700}
+.rsnooze{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.5)!important}
+.rstop{background:#fff;color:#3a2b6e}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:#fff;color:#1a2147;padding:10px 18px;border-radius:99px;font-size:14px;z-index:200;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="banner"></div>
+
+  <!-- ALARM -->
+  <section class="tab active" id="tab-alarm">
+    <div class="topbar"><button class="iconbtn" id="btnSettings" aria-label="Pengaturan">⚙</button></div>
+    <div class="hero">
+      <div class="bigclock tnum" id="bigClock">--:--</div>
+      <div class="date" id="bigDate"></div>
+      <div class="next" id="nextInfo">Belum ada alarm aktif</div>
+    </div>
+    <div id="alarmList"></div>
+  </section>
+
+  <!-- TIMER -->
+  <section class="tab" id="tab-timer">
+    <div id="timerSetup">
+      <div class="tset">
+        <div><input id="tH" type="number" min="0" max="99" value="0" inputmode="numeric"><span>jam</span></div>
+        <div><input id="tM" type="number" min="0" max="59" value="5" inputmode="numeric"><span>menit</span></div>
+        <div><input id="tS" type="number" min="0" max="59" value="0" inputmode="numeric"><span>detik</span></div>
+      </div>
+      <div class="presets">
+        <button data-p="60">1 mnt</button><button data-p="300">5 mnt</button><button data-p="600">10 mnt</button>
+        <button data-p="1200">20 mnt</button><button data-p="1800">30 mnt</button><button data-p="3600">1 jam</button>
+      </div>
+    </div>
+    <div class="big tnum" id="timerDisp" style="display:none">00:05:00</div>
+    <div class="ctrls" style="margin-top:28px">
+      <button class="btn" id="tReset">Reset</button>
+      <button class="btn primary" id="tStart">Mulai</button>
+    </div>
+  </section>
+
+  <!-- STOPWATCH -->
+  <section class="tab" id="tab-sw">
+    <div class="big tnum" id="swDisp">00:00.00</div>
+    <div class="ctrls">
+      <button class="btn" id="swLap">Lap</button>
+      <button class="btn primary" id="swStart">Mulai</button>
+      <button class="btn" id="swReset">Reset</button>
+    </div>
+    <div class="laps" id="swLaps"></div>
+  </section>
+</div>
+
+<button class="fab" id="fab" aria-label="Tambah alarm">+</button>
+
+<nav><div class="in">
+  <button class="active" data-tab="alarm"><b>⏰</b>Alarm</button>
+  <button data-tab="timer"><b>⏳</b>Timer</button>
+  <button data-tab="sw"><b>⏱</b>Stopwatch</button>
+</div></nav>
+
+<!-- EDITOR ALARM -->
+<div class="modal" id="mEdit"><div class="sheet">
+  <h2 id="eTitle">Alarm baru</h2>
+  <input class="timeinput tnum" id="eTime" type="time" value="06:00">
+  <div class="field"><label>Ulangi</label>
+    <div class="days" id="eDays"></div>
+    <div class="hint" id="eDaysHint">Tidak ada hari dipilih = bunyi sekali saja.</div>
+  </div>
+  <div class="field"><label for="eLabel">Label</label>
+    <input class="inp" id="eLabel" maxlength="40" placeholder="mis. Subuh, Kerja, Olahraga">
+  </div>
+  <div class="field"><label>Suara alarm</label>
+    <div class="seg" id="eSound"><button data-v="yt">YouTube</button><button data-v="beep">Bunyi bawaan</button></div>
+  </div>
+  <div class="field" id="eYtField"><label for="eYt">Link YouTube</label>
+    <input class="inp" id="eYt" inputmode="url" placeholder="Kosong = pakai link default dari Pengaturan">
+    <div class="hint">Mendukung link video, youtu.be, shorts, dan playlist.</div>
+  </div>
+  <div class="field"><label for="eSnooze">Tunda (snooze)</label>
+    <select class="inp" id="eSnooze">
+      <option value="0">Tanpa snooze</option><option value="1">1 menit</option><option value="3">3 menit</option>
+      <option value="5">5 menit</option><option value="10">10 menit</option><option value="15">15 menit</option>
+    </select>
+  </div>
+  <div class="row"><div><div class="tx">Getar</div><div class="sub">Hanya di perangkat yang mendukung</div></div>
+    <label class="switch"><input type="checkbox" id="eVib"><i></i></label></div>
+  <div class="btnrow">
+    <button class="btn" id="eTest">Tes bunyi</button>
+    <button class="btn danger" id="eDel">Hapus</button>
+  </div>
+  <div class="btnrow">
+    <button class="btn" id="eCancel">Batal</button>
+    <button class="btn primary" id="eSave">Simpan</button>
+  </div>
+</div></div>
+
+<!-- PENGATURAN -->
+<div class="modal" id="mSet"><div class="sheet">
+  <h2>Pengaturan</h2>
+  <div class="field" style="margin-top:0"><label for="sYt">Link YouTube default</label>
+    <input class="inp" id="sYt" inputmode="url" placeholder="https://www.youtube.com/watch?v=...">
+    <div class="hint">Dipakai semua alarm & timer yang tidak punya link sendiri.</div>
+  </div>
+  <div class="field"><label>Volume maksimum: <b id="sVolV">100</b>%</label>
+    <input type="range" id="sVol" min="10" max="100" step="5">
+  </div>
+  <div class="row"><div><div class="tx">Volume naik perlahan</div><div class="sub">Mulai pelan, naik penuh dalam 30 detik</div></div>
+    <label class="switch"><input type="checkbox" id="sRamp"><i></i></label></div>
+  <div class="field"><label for="sSnooze">Snooze default (alarm baru)</label>
+    <select class="inp" id="sSnooze"><option value="0">Tanpa snooze</option><option value="3">3 menit</option><option value="5">5 menit</option><option value="10">10 menit</option><option value="15">15 menit</option></select>
+  </div>
+  <div class="field"><label for="sRing">Berhenti otomatis setelah</label>
+    <select class="inp" id="sRing"><option value="1">1 menit</option><option value="5">5 menit</option><option value="10">10 menit</option><option value="30">30 menit</option><option value="60">60 menit</option></select>
+  </div>
+  <div class="row"><div><div class="tx">Format 24 jam</div></div>
+    <label class="switch"><input type="checkbox" id="sH24"><i></i></label></div>
+  <div class="row"><div><div class="tx">Jaga layar tetap menyala</div><div class="sub">Disarankan saat malam hari, supaya alarm tidak tertunda</div></div>
+    <label class="switch"><input type="checkbox" id="sWake"><i></i></label></div>
+  <div class="row"><div><div class="tx">Notifikasi</div><div class="sub" id="sNotifSub"></div></div>
+    <button class="btn" id="sNotif">Izinkan</button></div>
+  <div class="btnrow"><button class="btn" id="sTest">Tes link YouTube</button><button class="btn primary" id="sClose">Selesai</button></div>
+</div></div>
+
+<!-- LAYAR BERBUNYI -->
+<div id="ring">
+  <div class="rt tnum" id="rTime">06:00</div>
+  <div class="rl" id="rLabel">Alarm</div>
+  <div class="rs" id="rStatus"></div>
+  <div id="ytwrap"><div id="ytbox"></div></div>
+  <div class="ringbtns">
+    <button class="rsnooze" id="rSnooze">Tunda</button>
+    <button class="rstop" id="rStop">Matikan</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const pad=n=>String(n).padStart(2,'0');
+const DAYORDER=[1,2,3,4,5,6,0], DAYS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MONTHS=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const DAYFULL=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- State ---------- */
+const DEF={alarms:[],snoozes:[],settings:{ytUrl:'',maxVol:100,ramp:true,snooze:5,ringMin:10,h24:true,wake:false}};
+let S;
+try{ S=JSON.parse(localStorage.getItem('alarmBangun.v1')||'null')||DEF; }catch(e){ S=DEF; }
+S.settings=Object.assign({},DEF.settings,S.settings||{}); S.alarms=S.alarms||[]; S.snoozes=S.snoozes||[];
+function save(){ try{localStorage.setItem('alarmBangun.v1',JSON.stringify(S));}catch(e){} }
+let interacted=false;
+
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2400); }
+
+/* ---------- Format waktu ---------- */
+function fmt(hm){
+  const [h,m]=hm.split(':').map(Number);
+  if(S.settings.h24) return {t:pad(h)+':'+pad(m),s:''};
+  return {t:((h%12)||12)+':'+pad(m),s:h<12?'AM':'PM'};
+}
+function daysText(d){
+  if(!d.length) return 'Sekali';
+  if(d.length===7) return 'Setiap hari';
+  const s=[...d].sort().join();
+  if(s==='1,2,3,4,5') return 'Senin – Jumat';
+  if(s==='0,6') return 'Akhir pekan';
+  return DAYORDER.filter(x=>d.includes(x)).map(x=>DAYS[x]).join(', ');
+}
+function nextTrigger(a,from){
+  const [h,m]=a.time.split(':').map(Number);
+  for(let i=0;i<8;i++){
+    const c=new Date(from); c.setDate(from.getDate()+i); c.setHours(h,m,0,0);
+    if(c>from && (!a.days.length||a.days.includes(c.getDay()))) return c;
+  }
+  return null;
+}
+function untilText(ms){
+  const mins=Math.max(1,Math.ceil(ms/60000)); const d=Math.floor(mins/1440), h=Math.floor(mins%1440/60), m=mins%60;
+  const p=[]; if(d)p.push(d+' hari'); if(h)p.push(h+' jam'); if(m&&!d)p.push(m+' menit');
+  return p.join(' ')||'kurang dari 1 menit';
+}
+
+/* ---------- YouTube ---------- */
+function parseYT(u){
+  if(!u) return null;
+  try{
+    const url=new URL(u.trim()); const list=url.searchParams.get('list'); let id=null;
+    if(url.hostname.includes('youtu.be')) id=url.pathname.slice(1).split('/')[0];
+    else if(/^\/(shorts|embed|live)\//.test(url.pathname)) id=url.pathname.split('/')[2];
+    else id=url.searchParams.get('v');
+    if(id||list) return {id:id||null,list:list||null};
+  }catch(e){}
+  return null;
+}
+let ytReady=false, ytLoading=false;
+function loadYT(){
+  if(ytReady||ytLoading||location.protocol==='file:'&&false) return; ytLoading=true;
+  const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; s.onerror=()=>{ytLoading=false;};
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady=function(){ ytReady=true; if(pendingYT){ const p=pendingYT; pendingYT=null; createYT(p);} };
+let pendingYT=null;
+
+/* ---------- Suara ---------- */
+let actx=null, ring=null, ytPlayer=null, beepTimer=null, rampTimer=null, vibTimer=null, autoStop=null, tickDisp=null;
+function ensureAudio(){
+  try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){}
+}
+function curVol(){
+  const max=S.settings.maxVol/100;
+  if(!S.settings.ramp||!ring) return max;
+  const k=Math.min(1,(Date.now()-ring.start)/30000);
+  return max*(0.12+0.88*k);
+}
+function burst(){
+  if(!actx) return; const v=curVol(); const t0=actx.currentTime;
+  for(let i=0;i<4;i++){
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='square'; o.frequency.value=i%2?988:880; o.connect(g); g.connect(actx.destination);
+    const t=t0+i*0.18; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002,0.28*v),t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.14); o.start(t); o.stop(t+0.15);
+  }
+}
+function beepOn(){ if(beepTimer) return; ensureAudio(); burst(); beepTimer=setInterval(burst,1100); }
+function beepOff(){ clearInterval(beepTimer); beepTimer=null; }
+
+function createYT(p){
+  const vars={autoplay:1,playsinline:1,rel:0,controls:1,modestbranding:1};
+  if(p.list){ vars.listType='playlist'; vars.list=p.list; } else { vars.loop=1; vars.playlist=p.id; }
+  const vol=()=>Math.round(curVol()*100);
+  try{
+    ytPlayer=new YT.Player('ytbox',{width:'100%',height:'100%',videoId:p.id||undefined,playerVars:vars,events:{
+      onReady:e=>{ try{ e.target.setVolume(vol()); if(p.list) e.target.setLoop(true); e.target.playVideo(); }catch(_){} },
+      onStateChange:e=>{ if(e.data===1&&ring){ ring.ytPlaying=true; beepOff(); setStatus('Memutar dari YouTube'); } },
+      onError:()=>{ setStatus('YouTube gagal diputar, pakai bunyi cadangan'); beepOn(); }
+    }});
+  }catch(e){ beepOn(); }
+}
+function startYT(p){
+  $('#ytwrap').classList.add('show');
+  if(ytReady) createYT(p); else { pendingYT=p; loadYT(); }
+  // jaga-jaga: kalau 6 detik belum bunyi, nyalakan bunyi cadangan
+  ring.fb=setTimeout(()=>{ if(ring&&!ring.ytPlaying){ setStatus('YouTube belum bisa diputar, pakai bunyi cadangan. Ketuk video untuk memutar.'); beepOn(); } },6000);
+}
+function setStatus(t){ const el=$('#rStatus'); if(el) el.textContent=t; }
+
+/* ---------- Alarm berbunyi ---------- */
+function startRing(info){
+  if(ring) return; ensureAudio();
+  ring=Object.assign({start:Date.now(),ytPlaying:false},info);
+  $('#rTime').textContent=info.display||'';
+  $('#rLabel').textContent=info.label||'Alarm';
+  $('#rSnooze').style.display=info.snooze>0?'':'none';
+  $('#rSnooze').textContent='Tunda '+info.snooze+' mnt';
+  setStatus(''); $('#ring').classList.add('show');
+  const yt=info.sound==='yt'?parseYT(info.yt||S.settings.ytUrl):null;
+  if(yt) startYT(yt); else beepOn();
+  rampTimer=setInterval(()=>{ if(ytPlayer&&ytPlayer.setVolume){ try{ytPlayer.setVolume(Math.round(curVol()*100));}catch(e){} } },1000);
+  if(info.vibrate&&navigator.vibrate){ navigator.vibrate([600,300,600]); vibTimer=setInterval(()=>navigator.vibrate([600,300,600]),2500); }
+  autoStop=setTimeout(()=>stopRing(true),S.settings.ringMin*60000);
+  try{ if('Notification' in window&&Notification.permission==='granted') new Notification(info.label||'Alarm',{body:'Waktunya bangun! '+(info.display||'')}); }catch(e){}
+  if(!info.test) document.title='⏰ '+(info.label||'Alarm');
+}
+function cleanupRing(){
+  clearTimeout(autoStop); clearTimeout(ring&&ring.fb); clearInterval(rampTimer); clearInterval(vibTimer); beepOff();
+  if(navigator.vibrate) navigator.vibrate(0);
+  try{ if(ytPlayer&&ytPlayer.destroy) ytPlayer.destroy(); }catch(e){} ytPlayer=null; pendingYT=null;
+  const w=$('#ytwrap'); w.classList.remove('show'); w.innerHTML='<div id="ytbox"></div>';
+  $('#ring').classList.remove('show'); document.title='Alarm Bangun Tidur';
+}
+function stopRing(){ if(!ring) return; cleanupRing(); ring=null; render(); }
+function snoozeRing(){
+  if(!ring) return; const r=ring; cleanupRing(); ring=null;
+  if(r.snooze>0&&!r.test){
+    const at=Date.now()+r.snooze*60000; S.snoozes.push({at,info:{label:r.label,sound:r.sound,yt:r.yt,snooze:r.snooze,vibrate:r.vibrate}}); save();
+    const d=new Date(at); toast('Ditunda sampai '+pad(d.getHours())+':'+pad(d.getMinutes()));
+  }
+  render();
+}
+$('#rStop').onclick=stopRing; $('#rSnooze').onclick=snoozeRing;
+
+/* ---------- Tick utama ---------- */
+function tick(){
+  const now=new Date(); const hm=pad(now.getHours())+':'+pad(now.getMinutes());
+  const f=fmt(hm); const sec=pad(now.getSeconds());
+  $('#bigClock').innerHTML=f.t+(S.settings.h24?':'+sec:'')+(f.s?'<small>'+f.s+'</small>':'');
+  $('#bigDate').textContent=DAYFULL[now.getDay()]+', '+now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
+  const key=now.toDateString()+' '+hm; let changed=false;
+  S.alarms.forEach(a=>{
+    if(!a.enabled||a.time!==hm||a.lastFired===key) return;
+    if(a.days.length&&!a.days.includes(now.getDay())) return;
+    a.lastFired=key; if(!a.days.length) a.enabled=false; changed=true;
+    startRing({label:a.label||'Alarm',display:f.t+(f.s?' '+f.s:''),sound:a.sound,yt:a.yt,snooze:a.snooze,vibrate:a.vibrate});
+  });
+  const due=S.snoozes.filter(s=>s.at<=Date.now());
+  if(due.length){ S.snoozes=S.snoozes.filter(s=>s.at>Date.now()); changed=true; due.forEach(s=>startRing(Object.assign({display:f.t+(f.s?' '+f.s:'')},s.info))); }
+  if(changed){ save(); render(); }
+  updateNext(now);
+}
+function updateNext(now){
+  let best=null;
+  S.alarms.forEach(a=>{ if(!a.enabled) return; const t=nextTrigger(a,now); if(t&&(!best||t<best)) best=t; });
+  S.snoozes.forEach(s=>{ const t=new Date(s.at); if(!best||t<best) best=t; });
+  $('#nextInfo').textContent=best?'Alarm berbunyi dalam '+untilText(best-now):'Belum ada alarm aktif';
+}
+
+/* ---------- Render daftar alarm ---------- */
+function render(){
+  const list=$('#alarmList');
+  if(!S.alarms.length){ list.innerHTML='<div class="empty">Belum ada alarm.<br>Ketuk tombol + untuk membuat alarm pertamamu.</div>'; updateNext(new Date()); return; }
+  const sorted=[...S.alarms].sort((a,b)=>a.time.localeCompare(b.time));
+  list.innerHTML=sorted.map(a=>{
+    const f=fmt(a.time);
+    const y=a.sound==='yt'?'♪ YouTube':'♪ Bunyi bawaan';
+    return `<div class="acard ${a.enabled?'':'off'}" data-id="${a.id}">
+      <button class="main" data-edit="${a.id}">
+        <div class="t tnum">${f.t}<small>${f.s}</small></div>
+        <div class="l">${esc(a.label||'Alarm')}</div>
+        <div class="d">${daysText(a.days)}${a.snooze?' · tunda '+a.snooze+' mnt':''}</div>
+        <div class="snd">${y}</div>
+      </button>
+      <label class="switch"><input type="checkbox" data-tog="${a.id}" ${a.enabled?'checked':''}><i></i></label>
+    </div>`; }).join('');
+  updateNext(new Date());
+}
+$('#alarmList').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]'); if(ed) openEdit(ed.dataset.edit);
+});
+$('#alarmList').addEventListener('change',e=>{
+  const id=e.target.dataset.tog; if(!id) return; const a=S.alarms.find(x=>x.id===id); if(!a) return;
+  a.enabled=e.target.checked; a.lastFired=''; save(); render();
+  if(a.enabled){ const t=nextTrigger(a,new Date()); if(t) toast('Alarm berbunyi dalam '+untilText(t-new Date())); askNotif(); }
+});
+
+/* ---------- Editor ---------- */
+let editing=null, eDays=[], eSound='yt';
+function buildDays(){
+  $('#eDays').innerHTML=DAYORDER.map(d=>`<button type="button" data-d="${d}" class="${eDays.includes(d)?'on':''}">${DAYS[d]}</button>`).join('');
+  $('#eDaysHint').textContent=eDays.length?daysText(eDays):'Tidak ada hari dipilih = bunyi sekali saja.';
+}
+$('#eDays').addEventListener('click',e=>{
+  const b=e.target.closest('[data-d]'); if(!b) return; const d=+b.dataset.d;
+  eDays=eDays.includes(d)?eDays.filter(x=>x!==d):[...eDays,d]; buildDays();
+});
+function setSound(v){ eSound=v; $$('#eSound button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); $('#eYtField').style.display=v==='yt'?'':'none'; }
+$('#eSound').addEventListener('click',e=>{ const b=e.target.closest('button'); if(b) setSound(b.dataset.v); });
+function openEdit(id){
+  const a=id?S.alarms.find(x=>x.id===id):null; editing=a||null;
+  $('#eTitle').textContent=a?'Ubah alarm':'Alarm baru';
+  $('#eTime').value=a?a.time:'06:00'; $('#eLabel').value=a?a.label:'';
+  eDays=a?[...a.days]:[]; buildDays();
+  setSound(a?a.sound:(S.settings.ytUrl?'yt':'beep')); $('#eYt').value=a?a.yt:'';
+  $('#eSnooze').value=String(a?a.snooze:S.settings.snooze); $('#eVib').checked=a?a.vibrate:true;
+  $('#eDel').style.display=a?'':'none'; $('#mEdit').classList.add('show');
+}
+function closeEdit(){ $('#mEdit').classList.remove('show'); }
+function readEdit(){
+  return {time:$('#eTime').value||'06:00',label:$('#eLabel').value.trim(),days:[...eDays],sound:eSound,yt:$('#eYt').value.trim(),
+    snooze:+$('#eSnooze').value,vibrate:$('#eVib').checked};
+}
+$('#fab').onclick=()=>openEdit(null);
+$('#eCancel').onclick=closeEdit;
+$('#eSave').onclick=()=>{
+  const v=readEdit();
+  if(v.sound==='yt'){
+    const link=v.yt||S.settings.ytUrl;
+    if(!parseYT(link)){ toast(link?'Link YouTube tidak valid':'Isi link YouTube atau set link default di Pengaturan'); return; }
+  }
+  if(editing) Object.assign(editing,v,{enabled:true,lastFired:''});
+  else S.alarms.push(Object.assign({id:'a'+Date.now().toString(36),enabled:true,lastFired:''},v));
+  save(); closeEdit(); render(); askNotif();
+  const t=nextTrigger(Object.assign({},v),new Date()); if(t) toast('Alarm berbunyi dalam '+untilText(t-new Date()));
+};
+$('#eDel').onclick=()=>{ if(editing&&confirm('Hapus alarm ini?')){ S.alarms=S.alarms.filter(a=>a!==editing); save(); closeEdit(); render(); } };
+$('#eTest').onclick=()=>{
+  const v=readEdit(); interacted=true; hideBanner();
+  if(v.sound==='yt'&&!parseYT(v.yt||S.settings.ytUrl)){ toast('Link YouTube belum valid'); return; }
+  closeEdit(); startRing({label:(v.label||'Alarm')+' (tes)',display:fmt(v.time).t,sound:v.sound,yt:v.yt,snooze:0,vibrate:v.vibrate,test:true});
+};
+$('#mEdit').addEventListener('click',e=>{ if(e.target.id==='mEdit') closeEdit(); });
+
+/* ---------- Pengaturan ---------- */
+function openSettings(){
+  const s=S.settings; $('#sYt').value=s.ytUrl; $('#sVol').value=s.maxVol; $('#sVolV').textContent=s.maxVol; $('#sRamp').checked=s.ramp;
+  $('#sSnooze').value=String(s.snooze); $('#sRing').value=String(s.ringMin); $('#sH24').checked=s.h24; $('#sWake').checked=s.wake;
+  notifLabel(); $('#mSet').classList.add('show');
+}
+function saveSettings(){
+  const s=S.settings; s.ytUrl=$('#sYt').value.trim(); s.maxVol=+$('#sVol').value; s.ramp=$('#sRamp').checked;
+  s.snooze=+$('#sSnooze').value; s.ringMin=+$('#sRing').value; s.h24=$('#sH24').checked; s.wake=$('#sWake').checked;
+  save(); render(); tick(); applyWake();
+}
+$('#btnSettings').onclick=openSettings;
+$('#sClose').onclick=()=>{ saveSettings(); $('#mSet').classList.remove('show'); };
+$('#mSet').addEventListener('click',e=>{ if(e.target.id==='mSet'){ saveSettings(); $('#mSet').classList.remove('show'); } });
+$('#sVol').oninput=e=>$('#sVolV').textContent=e.target.value;
+['#sRamp','#sH24','#sWake','#sSnooze','#sRing'].forEach(id=>$(id).addEventListener('change',saveSettings));
+$('#sTest').onclick=()=>{
+  const link=$('#sYt').value.trim(); if(!parseYT(link)){ toast('Link YouTube tidak valid'); return; }
+  saveSettings(); interacted=true; hideBanner(); $('#mSet').classList.remove('show');
+  startRing({label:'Tes link YouTube',display:fmt(pad(new Date().getHours())+':'+pad(new Date().getMinutes())).t,sound:'yt',yt:link,snooze:0,vibrate:false,test:true});
+};
+function notifLabel(){
+  const el=$('#sNotifSub'), b=$('#sNotif');
+  if(!('Notification' in window)){ el.textContent='Tidak didukung browser ini'; b.style.display='none'; return; }
+  const p=Notification.permission; el.textContent=p==='granted'?'Sudah diizinkan':p==='denied'?'Diblokir di pengaturan browser':'Belum diizinkan'; b.style.display=p==='default'?'':'none';
+}
+function askNotif(){ try{ if('Notification' in window&&Notification.permission==='default') Notification.requestPermission().then(notifLabel); }catch(e){} }
+$('#sNotif').onclick=askNotif;
+
+/* ---------- Wake lock ---------- */
+let wl=null;
+async function applyWake(){
+  try{
+    if(S.settings.wake&&'wakeLock' in navigator){ if(!wl){ wl=await navigator.wakeLock.request('screen'); wl.addEventListener('release',()=>{wl=null;}); } }
+    else if(wl){ await wl.release(); wl=null; }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ applyWake(); tick(); } });
+
+/* ---------- Tab ---------- */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(x=>x.classList.toggle('active',x===b));
+  $$('.tab').forEach(t=>t.classList.toggle('active',t.id==='tab-'+b.dataset.tab));
+  $('#fab').style.display=b.dataset.tab==='alarm'?'':'none';
+});
+
+/* ---------- Timer ---------- */
+let T={run:false,end:0,left:0,total:0,iv:null};
+const fmtHMS=s=>{ s=Math.max(0,Math.ceil(s)); return pad(Math.floor(s/3600))+':'+pad(Math.floor(s%3600/60))+':'+pad(s%60); };
+function setTimerInputs(sec){ $('#tH').value=Math.floor(sec/3600); $('#tM').value=Math.floor(sec%3600/60); $('#tS').value=sec%60; }
+$$('.presets button').forEach(b=>b.onclick=()=>setTimerInputs(+b.dataset.p));
+function timerRender(){
+  const left=T.run?(T.end-Date.now())/1000:T.left; $('#timerDisp').textContent=fmtHMS(left);
+  if(T.run&&left<=0){ clearInterval(T.iv); T.run=false; T.left=0; timerUI();
+    startRing({label:'Timer selesai',display:fmtHMS(T.total).slice(0,8),sound:S.settings.ytUrl?'yt':'beep',yt:'',snooze:0,vibrate:true}); }
+}
+function timerUI(){
+  const active=T.run||T.left>0;
+  $('#timerSetup').style.display=active?'none':''; $('#timerDisp').style.display=active?'':'none';
+  $('#tStart').textContent=T.run?'Jeda':(T.left>0?'Lanjut':'Mulai');
+}
+$('#tStart').onclick=()=>{
+  interacted=true; hideBanner(); ensureAudio();
+  if(T.run){ T.left=(T.end-Date.now())/1000; T.run=false; clearInterval(T.iv); }
+  else{
+    if(T.left<=0){ T.left=(+$('#tH').value||0)*3600+(+$('#tM').value||0)*60+(+$('#tS').value||0); T.total=T.left; }
+    if(T.left<=0){ toast('Atur durasi dulu'); return; }
+    T.end=Date.now()+T.left*1000; T.run=true; T.iv=setInterval(timerRender,200);
+  }
+  timerUI(); timerRender();
+};
+$('#tReset').onclick=()=>{ clearInterval(T.iv); T.run=false; T.left=0; timerUI(); };
+
+/* ---------- Stopwatch ---------- */
+let W={run:false,start:0,el:0,iv:null,laps:[]};
+const fmtSW=ms=>{ const t=Math.floor(ms/10); return pad(Math.floor(t/6000))+':'+pad(Math.floor(t%6000/100))+'.'+pad(t%100); };
+function swRender(){ $('#swDisp').textContent=fmtSW(W.run?Date.now()-W.start+W.el:W.el); }
+$('#swStart').onclick=()=>{
+  if(W.run){ W.el+=Date.now()-W.start; W.run=false; clearInterval(W.iv); $('#swStart').textContent='Lanjut'; }
+  else{ W.start=Date.now(); W.run=true; W.iv=setInterval(swRender,40); $('#swStart').textContent='Jeda'; }
+  swRender();
+};
+$('#swLap').onclick=()=>{ if(!W.run) return; W.laps.unshift(W.el+Date.now()-W.start); drawLaps(); };
+$('#swReset').onclick=()=>{ clearInterval(W.iv); W={run:false,start:0,el:0,iv:null,laps:[]}; $('#swStart').textContent='Mulai'; swRender(); drawLaps(); };
+function drawLaps(){
+  const n=W.laps.length;
+  $('#swLaps').innerHTML=W.laps.map((t,i)=>{ const prev=W.laps[i+1]||0; return `<div class="lap tnum"><span>Lap ${n-i}</span><span>+${fmtSW(t-prev)}</span><span>${fmtSW(t)}</span></div>`; }).join('');
+}
+
+/* ---------- Banner info ---------- */
+function hideBanner(){ if(interacted){ renderBanner(); } }
+function renderBanner(){
+  const msgs=[];
+  if(location.protocol==='file:') msgs.push('<b>Catatan:</b> YouTube sering menolak diputar kalau file dibuka langsung (file://). Jalankan lewat <b>localhost</b> atau hosting https supaya link YouTube bisa bunyi. Kalau gagal, alarm otomatis pakai bunyi cadangan.');
+  if(!interacted) msgs.push('Ketuk sekali di mana saja pada halaman ini setelah dibuka, supaya browser mengizinkan suara. Biarkan halaman tetap terbuka (jangan ditutup) sampai alarm bunyi.');
+  $('#banner').innerHTML=msgs.map(m=>'<div class="warn">'+m+'</div>').join('');
+}
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{ if(!interacted){ interacted=true; ensureAudio(); loadYT(); renderBanner(); applyWake(); } },{passive:true}));
+
+/* ---------- Mulai ---------- */
+renderBanner(); render(); tick(); timerUI(); swRender(); loadYT();
+setInterval(tick,500);
+})();
+</script>
+</body>
+</html>
