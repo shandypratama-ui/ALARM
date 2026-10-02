@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/ring_bg"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextClock
+        android:id="@+id/rclock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:format12Hour="HH:mm"
+        android:format24Hour="HH:mm"
+        android:textColor="#FFFFFF"
+        android:textSize="96sp" />
+
+    <TextView
+        android:id="@+id/rlabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="8dp"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="6dp"
+        android:text="Waktunya bangun!"
+        android:textColor="#FFE9CF"
+        android:textSize="16sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="56dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/rsnooze"
+            android:layout_width="0dp"
+            android:layout_height="68dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="Tunda" />
+
+        <Button
+            android:id="@+id/rstop"
+            android:layout_width="0dp"
+            android:layout_height="68dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="Matikan" />
+    </LinearLayout>
+</LinearLayout>

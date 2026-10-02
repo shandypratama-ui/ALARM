@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TimePicker
+            android:id="@+id/tp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:timePickerMode="spinner" />
+
+        <EditText
+            android:id="@+id/label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Label (mis. Subuh, Kerja)"
+            android:inputType="textCapSentences"
+            android:maxLength="40" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:text="Ulangi (kosong = sekali saja)"
+            android:textColor="@color/mute"
+            android:textSize="12sp" />
+
+        <LinearLayout
+            android:id="@+id/days"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="14dp"
+            android:text="Suara alarm (MP3 dari repo)"
+            android:textColor="@color/mute"
+            android:textSize="12sp" />
+
+        <Spinner
+            android:id="@+id/sound"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/noSoundHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Belum ada MP3 di dalam APK. Taruh file .mp3 di repo GitHub lalu build ulang."
+            android:textColor="@color/sun"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="▶ Coba suara" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:text="Tunda (snooze)"
+            android:textColor="@color/mute"
+            android:textSize="12sp" />
+
+        <Spinner
+            android:id="@+id/snooze"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <CheckBox
+            android:id="@+id/cbVibrate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Getar" />
+
+        <CheckBox
+            android:id="@+id/cbRamp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Volume naik perlahan (30 detik)" />
+
+        <CheckBox
+            android:id="@+id/cbMax"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Paksa volume alarm penuh" />
+    </LinearLayout>
+</ScrollView>
